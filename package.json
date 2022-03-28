@@ -1,5 +1,5 @@
 {
-  "name": "vue3-vite-demo",
+  "name": "vue3-link-client-demo",
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",
