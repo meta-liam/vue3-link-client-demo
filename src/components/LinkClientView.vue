@@ -2,22 +2,26 @@
   <h1>link-client-test-demo</h1>
   <div class="envBox"></div>
   <div class="buttonBox">
-    <button @click="start">新建</button>
-    <button @click="close">停止</button>
-    <button @click="close">刷新</button>
-    <button @click="getVersion">cg.getVersion</button>
-    <button @click="getServiceVersion">cg.getServiceVersion</button>
+    <button @click="start">链接服务</button>
+    <button @click="close">停止服务</button>
+    <button @click="refresh">刷新服务</button>
+    <button @click="cg_getVersion">cg.getVersion</button>
+    <button @click="cg_init">cg.init</button>
 
-    <button @click="sendData(this.db.init)">sg.init</button>
-    <button @click="sendData(this.db.askAndAnswer)">sg.askAndAnswer</button>
-    <button @click="sendData(this.db.listen)">sg.listen</button>
-    <button @click="sendData(this.db.close)">sg.close</button>
+    <button @click="sg_getVersion">sg.getVersion</button>
+    <button @click="sg_init">sg.init</button>
+    <button @click="sg_askAndAnswer">sg.askAndAnswer</button>
+    <button @click="sg_listen">sg.listen</button>
+    <button @click="sg_close">sg.close</button>
     <button @click="clear">清空日志</button>
   </div>
   <div class="pcConfig">
-    平台:<input id="inPlatform" value="auto" />
-    pcIp:<input id="inIP" value="localhost" />
-    port:<input id="inPort" value="52384" />
+    平台:
+    <input id="inPlatform" value="auto" />
+    pcIp:
+    <input id="inIP" value="localhost" />
+    port:
+    <input id="inPort" value="52384" />
   </div>
 
   <div class="InOutBox">
@@ -35,6 +39,8 @@
     <div>
       支持3端：pc,ios,android;
       <br />操作：点击"启动"->点击"service-global.getVersion"
+      <br />cg_*** 扩展服务API;
+      <br />sg_*** 底层硬件API.
     </div>
   </div>
 </template>
@@ -74,67 +80,99 @@ export default {
     callBack(v) {
       //console.log("<Vue3>:call back::", v);
       if (typeof v === "object") {
+        this.showLog("[cb]" + JSON.stringify(v));
+      } else this.showLog("[cb]" + (v));
+    },
+    _handle(v) {
+      //console.log("<Vue3>:call back::", v);
+      if (typeof v === "object") {
         this.showLog("[back]" + JSON.stringify(v));
       } else this.showLog("[back]" + (v));
+    },
+    _handleSend(v) {
+      //console.log("<Vue3>:call back::", v);
+      if (typeof v === "object") {
+        this.showLog("[sendH]" + JSON.stringify(v));
+      } else this.showLog("[sendH]" + (v));
     },
 
     start(event) {
       console.log("start", event);
       let ip = document.getElementById("inIP").value
       let port = parseInt(document.getElementById("inPort").value);
-      this.client.setHandle(this.callBack);
-      this.client.init(ip,port);
+      this.client.init(ip, port);//( "localhost",52384);
+      this.client.setHandle(this._handle); //非必要
+      this.client.channel.handleSend = this._handleSend; //非必要
       this.showLog("----start----");
     },
 
     close(event) {
       console.log("close", event);
-      if(this.client)this.client.close();
+      if (this.client) this.client.close();
+    },
+    refresh() {
+      if (this.client){
+        this.client.refresh();
+        this.client.setHandle(this._handle); //非必要
+        this.client.channel.handleSend = this._handleSend; //非必要
+      }
     },
 
+    cg_getVersion() {
+      let sv = this.client.getExtension("client-global"); //("discovery");//
+      console.log("sv.version::", sv.getVersion());
+    },
+    cg_init() {
+      let sv = this.client.getExtension("client-global");
+      let res = sv.init("");
+      console.log("sv.version::", res);
+    },
+    sg_getVersion() {
+      let sv = this.client.getService("service-global");
+      console.log("sv.version::", sv.getVersion());
+    },
+    sg_init() {
+      let sv = this.client.getService("service-global");
+      let res = sv.init("");
+      console.log("sv.version::", res);
+    },
+    sg_askAndAnswer() {
+      let sv = this.client.getService("service-global");
+      let res = sv.askAndAnswer("liam", this.callBack);
+      console.log("sv.askAndAnswer::", res);
+    },
+    sg_listen() {
+      let sv = this.client.getService("service-global");
+      let res = sv.listen(this.callBack, 3, 10);
+      console.log("sv.askAndAnswer::", res);
+    },
+    sg_close() {
+      let sv = this.client.getService("service-global");
+      let res = sv.close();
+      console.log("sv.close::", res);
+    },
     sendButton() {
       var v = document.getElementById("msgInput").value;
       this.sendData(JSON.parse(v));
     },
     sendData(data) {
-      //console.log("client getServiceHello:", event);
-      if (typeof data === "object") {
-        this.showLog("[send]" + JSON.stringify(data));
-      } else this.showLog("[send]" + (data));
       let r = data;
-      //{ "jsonrpc": "2.0", "method": "say", "params": ["liam"], "id": 199, "service": "hello-world" };
-      let result = this.client.channel.send(r.method, r.params, r.service);
+      let result = this.client.channel.send(r.method, r.params, r.service,r.id);
       console.log('result::', result);
     },
-    getVersion(){
-      let sv = this.client.getExtensionService("client-global"); //("discovery");//
-      console.log("sv.version::",sv.getVersion());
-    },
-    getServiceVersion(){
-      this.client.getServiceVersion();
-    }
   },
 
   setup() {
     console.log("-------------------------setup:");
     const message = "hello aa!";
-    const client = new LinkClient('',0,false);//(52384, "localhost");
+    let client = new LinkClient(false);
     const db = {};
-
-    const loadData = () => {
-      db.getVersion = { "jsonrpc": "2.0", "method": "getVersion", "params": [""], "id": 199, "service": "service-global" };
-      db.init = { "jsonrpc": "2.0", "method": "init", "params": ["{}"], "id": 299, "service": "service-global" };
-      db.askAndAnswer = { "jsonrpc": "2.0", "method": "askAndAnswer", "params": ["liam", { "type": "JSON_RPC_CALLBACK", "id": 188 }], "id": 399, "service": "service-global" };
-      db.listen = { "jsonrpc": "2.0", "method": "listen", "params": [{ "type": "JSON_RPC_CALLBACK", "id": 288 }, 5, 500], "id": 499, "service": "service-global" };
-      db.close = { "jsonrpc": "2.0", "method": "close", "params": [""], "id": 699, "service": "service-global" };
-    }
 
     let inputMsg = document.getElementById("msgInput");
     let outMsg = document.getElementById("msgOutput");
 
     onMounted(() => {
       console.log("run:onMounted link-client")
-      loadData();
     })
 
     return { message, client, db, inputMsg, outMsg };

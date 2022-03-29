@@ -9,7 +9,7 @@
   "dependencies": {
     "@vitejs/plugin-legacy": "^1.7.1",
     "@vitejs/plugin-vue": "^2.2.4",
-    "link-client": "^1.0.2",
+    "link-client": "^1.0.7",
     "vue": "^3.0.4"
   },
   "devDependencies": {
