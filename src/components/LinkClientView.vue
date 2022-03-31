@@ -13,6 +13,10 @@
     <button @click="sg_askAndAnswer">sg.askAndAnswer</button>
     <button @click="sg_listen">sg.listen</button>
     <button @click="sg_close">sg.close</button>
+
+    <button @click="dis_getNetList">dis.getNetList</button>
+    <button @click="dis_getMacAddress">dis.getMacAddress</button>
+
     <button @click="clear">清空日志</button>
   </div>
   <div class="pcConfig">
@@ -48,6 +52,7 @@
 <script>
 import { reactive, toRefs, computed, onBeforeMount, onMounted } from 'vue'
 import LinkClient from 'link-client'; //测试npm包
+//import LinkClient from '@makeblock/xlink-client';
 //import LinkChannel from '../lib/link-node/index'; // 直接测试代码
 
 export default {
@@ -111,7 +116,7 @@ export default {
       if (this.client) this.client.close();
     },
     refresh() {
-      if (this.client){
+      if (this.client) {
         this.client.refresh();
         this.client.setHandle(this._handle); //非必要
         this.client.channel.handleSend = this._handleSend; //非必要
@@ -151,13 +156,21 @@ export default {
       let res = sv.close();
       console.log("sv.close::", res);
     },
+    dis_getMacAddress() {
+      let sv = this.client.getService("discovery");
+      let res = sv.getMacAddress();
+    },
+    dis_getNetList() {
+      let sv = this.client.getService("discovery");
+      let res = sv.getNetList();
+    },
     sendButton() {
       var v = document.getElementById("msgInput").value;
       this.sendData(JSON.parse(v));
     },
     sendData(data) {
       let r = data;
-      let result = this.client.channel.send(r.method, r.params, r.service,r.id);
+      let result = this.client.channel.send(r.method, r.params, r.service, r.id);
       console.log('result::', result);
     },
   },
